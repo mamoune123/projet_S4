@@ -11,6 +11,7 @@ const generateTokens = (user) => {
         { expiresIn: '10m' } 
     );
 
+
     const refreshToken = jwt.sign(
         { id: user.id },
         process.env.JWT_SECRET,
@@ -55,7 +56,7 @@ exports.login = async (req, res) => {
         if (result.rows.length === 0) return res.status(401).json({ message: "Utilisateur non trouvé" });
 
         const user = result.rows[0];
-
+        const user_id = user.id;
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Mot de passe incorrect" });
 
@@ -64,7 +65,7 @@ exports.login = async (req, res) => {
         // Stocke le refresh token en base
         await pool.query("UPDATE users SET refresh_token = $1 WHERE id = $2", [refreshToken, user.id]);
 
-        res.json({ accessToken, refreshToken });
+        res.json({ accessToken, refreshToken, user_id });
     } catch (error) {
         res.status(500).json({ message: "Erreur serveur", error: error.message });
     }
