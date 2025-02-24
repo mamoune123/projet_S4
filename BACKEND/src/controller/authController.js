@@ -76,44 +76,42 @@ exports.login = async (req, res) => {
       user.id,
     ]);
 
-    res.json({ accessToken, refreshToken });
+    res.json({ accessToken, refreshToken});
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
 
 exports.register = async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
-
-    // Vérifier si l'utilisateur existe déjà
-    const userExists = await pool.query(
-      "SELECT * FROM users WHERE email = $1",
-      [email]
-    );
-    if (userExists.rows.length > 0) {
-      return res.status(400).json({ message: "Cet utilisateur existe déjà" });
-    }
-
-    // Hachage du mot de passe
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insertion dans la DB
-    const newUser = await pool.query(
-      "INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *",
-      [username, email, hashedPassword]
-    );
-
-    res
-      .status(201)
-      .json({
+    try {
+      const { username, email, password, role } = req.body;
+  
+      // Vérifier si l'utilisateur existe déjà
+      const userExists = await pool.query(
+        "SELECT * FROM users WHERE email = $1",
+        [email]
+      );
+      if (userExists.rows.length > 0) {
+        return res.status(400).json({ message: "Cet utilisateur existe déjà" });
+      }
+  
+      // Hachage du mot de passe
+      const hashedPassword = await bcrypt.hash(password, 10);
+  
+      // Insertion dans la DB avec le rôle
+      const newUser = await pool.query(
+        "INSERT INTO users (username, email, password, role) VALUES ($1, $2, $3, $4) RETURNING *",
+        [username, email, hashedPassword, role || 'user'] // Si le rôle n'est pas fourni, utilisez 'user' par défaut
+      );
+  
+      res.status(201).json({
         message: "Utilisateur enregistré avec succès",
         user: newUser.rows[0],
       });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  };
 
 exports.logout = async (req, res) => {
   const { userId } = req.body;

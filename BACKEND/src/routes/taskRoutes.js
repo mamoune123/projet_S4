@@ -14,4 +14,7 @@ router.post("/:id/comments", authMiddleware, taskController.addCommentToTask);
 
 router.get("/:id/comments", authMiddleware, taskController.getTaskComments);
 
+router.get("/:id/assigned-users", authMiddleware, taskController.getAssignedUsers);
+
+
 module.exports = router;
