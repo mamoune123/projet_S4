@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer');
-const emailConfig = require('../config/emailConfig');
+const emailConfig = require('../config/config');
 
 // Create a transporter object
 const transporter = nodemailer.createTransport({
@@ -55,4 +55,5 @@ const sendCommentNotificationEmail = async (userEmail, taskName, comment) => {
 module.exports = {
   sendTaskCompletionEmail,
   sendCommentNotificationEmail,
+  sendEmail
 };

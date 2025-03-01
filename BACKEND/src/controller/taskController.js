@@ -1,5 +1,7 @@
 const pool = require("../db/db");
 const jwt = require("jsonwebtoken");
+const { sendEmail } = require("./mailController");
+
 require("dotenv").config();
 
 exports.createTask = async (req, res) => {
@@ -55,6 +57,22 @@ exports.createTask = async (req, res) => {
           "INSERT INTO task_users (task_id, user_id) VALUES ($1, $2)",
           [task.id, user_id]
         );
+
+        // Récupérer les informations de l'utilisateur assigné
+        const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [user_id]);
+        const userEmail = userResult.rows[0].email;
+        const userName = userResult.rows[0].username;
+
+        // Récupérer les informations du projet
+        const projectResult = await pool.query("SELECT * FROM projects WHERE id = $1", [project_id]);
+        const projectName = projectResult.rows[0].name;
+
+        // Envoyer un email à l'utilisateur assigné
+        const subject = `Nouvelle tâche assignée dans le projet ${projectName}`;
+        const text = `Bonjour ${userName},\n\nVous avez été assigné à la tâche "${title}" dans le projet "${projectName}".\n\nDescription : ${description}\n\nCordialement,`;
+        const html = `<p>Bonjour ${userName},</p><p>Vous avez été assigné à la tâche <strong>"${title}"</strong> dans le projet <strong>"${projectName}"</strong>.</p><p>Description : ${description}</p><p>Cordialement,</p>`;
+
+        await sendEmail(userEmail, subject, text, html);
       }
     }
 
@@ -125,9 +143,7 @@ exports.updateTask = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id; // L'ID de l'utilisateur
     const userRole = decoded.role; // Le rôle de l'utilisateur (manager ou user)
-    console.log("Decoded token 111:", decoded);
-    console.log("User id de user 111: ",userId);
-    console.log("user role ici 111:",userRole);
+
     // Récupérer la tâche pour vérifier si l'utilisateur est autorisé à la modifier
     const taskResult = await pool.query("SELECT * FROM tasks WHERE id = $1", [id]);
     if (taskResult.rows.length === 0) {
@@ -177,6 +193,22 @@ exports.updateTask = async (req, res) => {
           "INSERT INTO task_users (task_id, user_id) VALUES ($1, $2)",
           [id, user_id]
         );
+
+        // Récupérer les informations de l'utilisateur assigné
+        const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [user_id]);
+        const userEmail = userResult.rows[0].email;
+        const userName = userResult.rows[0].username;
+
+        // Récupérer les informations du projet
+        const projectResult = await pool.query("SELECT * FROM projects WHERE id = $1", [task.project_id]);
+        const projectName = projectResult.rows[0].name;
+
+        // Envoyer un email à l'utilisateur assigné
+        const subject = `Mise à jour de la tâche dans le projet ${projectName}`;
+        const text = `Bonjour ${userName},\n\nVous avez été assigné à la tâche "${title}" dans le projet "${projectName}".\n\nDescription : ${description}\n\nCordialement,`;
+        const html = `<p>Bonjour ${userName},</p><p>Vous avez été assigné à la tâche <strong>"${title}"</strong> dans le projet <strong>"${projectName}"</strong>.</p><p>Description : ${description}</p><p>Cordialement,</p>`;
+
+        await sendEmail(userEmail, subject, text, html);
       }
     }
 
@@ -210,14 +242,52 @@ exports.deleteTask = async (req, res) => {
 
 // Add a comment to a task
 exports.addCommentToTask = async (req, res) => {
-  const { id } = req.params;
-  const { user_id, content } = req.body;
+  const { id } = req.params; // ID de la tâche
+  const { content } = req.body; // Contenu du commentaire
+
   try {
+    // Récupérer le token du header Authorization
+    const token = req.headers.authorization?.split(" ")[1]; // Format: "Bearer <token>"
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    // Décoder le token pour obtenir l'ID de l'utilisateur
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id; // L'ID de l'utilisateur qui commente
+
+    // Ajouter le commentaire à la tâche
     const result = await pool.query(
       "INSERT INTO comments (task_id, user_id, content) VALUES ($1, $2, $3) RETURNING *",
-      [id, user_id, content]
+      [id, userId, content]
     );
-    res.status(201).json(result.rows[0]);
+
+    const comment = result.rows[0];
+
+    // Récupérer les informations de l'utilisateur qui a commenté
+    const commenterResult = await pool.query("SELECT username FROM users WHERE id = $1", [userId]);
+    const commenterUsername = commenterResult.rows[0].username;
+
+    // Récupérer les utilisateurs assignés à la tâche
+    const assignedUsersResult = await pool.query(
+      "SELECT u.email, u.username FROM users u JOIN task_users tu ON u.id = tu.user_id WHERE tu.task_id = $1",
+      [id]
+    );
+
+    // Récupérer les informations de la tâche
+    const taskResult = await pool.query("SELECT * FROM tasks WHERE id = $1", [id]);
+    const task = taskResult.rows[0];
+
+    // Envoyer un email à chaque utilisateur assigné
+    for (const user of assignedUsersResult.rows) {
+      const subject = `Nouveau commentaire sur la tâche "${task.title}"`;
+      const text = `Bonjour ${user.username},\n\n${commenterUsername} a ajouté un commentaire sur la tâche "${task.title}":\n\n${content}\n\nCordialement,`;
+      const html = `<p>Bonjour ${user.username},</p><p><strong>${commenterUsername}</strong> a ajouté un commentaire sur la tâche <strong>"${task.title}"</strong> :</p><p>${content}</p><p>Cordialement,</p>`;
+
+      await sendEmail(user.email, subject, text, html);
+    }
+
+    res.status(201).json(comment);
   } catch (err) {
     console.error(err);
     res.status(500).send("Server error");
@@ -237,6 +307,7 @@ exports.getAssignedUsers = async (req, res) => {
     res.status(500).send("Server error");
   }
 };
+
 // Get all comments for a task
 exports.getTaskComments = async (req, res) => {
   const { id } = req.params;

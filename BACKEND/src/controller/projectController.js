@@ -1,5 +1,6 @@
   const pool = require("../db/db");
   const jwt = require("jsonwebtoken");
+  const { sendEmail } = require("./mailController");
   require("dotenv").config();
 
   exports.createProject = async (req, res) => {
@@ -274,7 +275,24 @@
         "INSERT INTO project_users (project_id, user_id, role) VALUES ($1, $2, $3) RETURNING *",
         [project_id, user_id, role || "member"]
       );
-  
+
+      const managerResult = await pool.query("SELECT * FROM users WHERE id = $1", [decoded.id]);
+      const projectResult = await pool.query("SELECT * FROM projects WHERE id = $1", [project_id]);
+
+      const managerName = managerResult.rows[0].username; 
+      const projectName = projectResult.rows[0].name; 
+
+      // Récupérer l'email de l'utilisateur ajouté
+      const userResult = await pool.query("SELECT * FROM users WHERE id = $1", [user_id]);
+      const userEmail = userResult.rows[0].email;
+
+      // Envoyer un email à l'utilisateur ajouté
+      const subject = `Vous avez été ajouté au projet ${projectName}`;
+      const text = `Bonjour,\n\nLe manager ${managerName} vous a ajouté au projet "${projectName}".\n\nCordialement,`;
+      const html = `<p>Bonjour,</p><p>Le manager <strong>${managerName}</strong> vous a ajouté au projet <strong>"${projectName}"</strong>.</p><p>Cordialement,</p>`;
+
+      await sendEmail(userEmail, subject, text, html);
+
       res.status(201).json(result.rows[0]);
     } catch (err) {
       console.error(err);
