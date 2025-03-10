@@ -22,7 +22,7 @@ register_response=$(curl -s -X POST "$BASE_URL/auth/register" -H "Content-Type: 
   "password": "'"$PASSWORD"'"
 }')
 echo "Register Response: $register_response"
-USER_ID=$(echo $register_response | jq -r '.user.id') # Extract the user ID from the response
+#USER_ID=$(echo $register_response | jq -r '.user.id') # Extract the user ID from the response
 print_separator
 
 # 2. Login to Get Access Token
@@ -33,13 +33,14 @@ login_response=$(curl -s -X POST "$BASE_URL/auth/login" -H "Content-Type: applic
 }')
 echo "Login Response: $login_response"
 ACCESS_TOKEN=$(echo $login_response | jq -r '.accessToken') # Extract the access token from the response
+USER_ID=$(echo $login_response | jq -r '.user_id')
 print_separator
 
 # 3. Create a New Project
-echo "Creating a new project..."
+echo "Creating a new project... $USER_ID"
 project_response=$(curl -s -X POST "$BASE_URL/projects" -H "Content-Type: application/json" -H "Authorization: Bearer $ACCESS_TOKEN" -d '{
-  "name": " Project",
-  "description": "This a new project",
+  "name": "aProjeazect",
+  "description": "aThis a new proazeject",
   "created_by": '$USER_ID'
 }')
 echo "Project Response: $project_response"
