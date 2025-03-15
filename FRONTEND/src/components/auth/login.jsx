@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Container,
   Typography,
@@ -6,24 +6,35 @@ import {
   Button,
   Box,
   Paper,
+  Alert,
 } from "@mui/material";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import axios from "axios";
+import AuthContext from "../../context/authContext";
 
 const LoginPage = () => {
+  const { handleLogin } = useContext(AuthContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Email:", email);
-    console.log("Password:", password);
+    setError("");
+
+    try {
+      await handleLogin(email, password);
+      navigate("/dashboard");
+    } catch (err) {
+      setError("Identifiants incorrects ou problème serveur.");
+    }
   };
 
   return (
     <Container component="main" maxWidth="xs">
-      <Paper elevation={3} style={{ padding: "20px", marginTop: "50px" }}>
+      <Paper elevation={3} sx={{ padding: 3, mt: 5 }}>
         <Box
           sx={{
             display: "flex",
@@ -31,10 +42,11 @@ const LoginPage = () => {
             alignItems: "center",
           }}
         >
-          <LockOutlinedIcon color="primary" style={{ fontSize: 40 }} />
+          <LockOutlinedIcon color="primary" sx={{ fontSize: 40 }} />
           <Typography component="h1" variant="h5">
-            Sign in
+            Connexion
           </Typography>
+          {error && <Alert severity="error">{error}</Alert>}
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -46,7 +58,7 @@ const LoginPage = () => {
               required
               fullWidth
               id="email"
-              label="Email Address"
+              label="Adresse Email"
               name="email"
               autoComplete="email"
               autoFocus
@@ -58,7 +70,7 @@ const LoginPage = () => {
               required
               fullWidth
               name="password"
-              label="Password"
+              label="Mot de passe"
               type="password"
               id="password"
               autoComplete="current-password"
@@ -71,15 +83,15 @@ const LoginPage = () => {
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
             >
-              Sign In
+              Se connecter
             </Button>
             <Typography variant="body2" align="center">
-              Don't have an account?{" "}
+              Pas encore de compte ?{" "}
               <Link
                 to="/register"
                 style={{ textDecoration: "none", color: "#1976d2" }}
               >
-                Register
+                Inscrivez-vous
               </Link>
             </Typography>
           </Box>

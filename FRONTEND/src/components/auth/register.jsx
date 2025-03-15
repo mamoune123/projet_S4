@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   Container,
   Typography,
@@ -6,24 +6,68 @@ import {
   Button,
   Box,
   Paper,
+  Alert,
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import AuthContext from "../../context/authContext";
 
 const Register = () => {
+  const { handleLogin } = useContext(AuthContext);
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const validateEmail = (email) => {
+    const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    return regex.test(email);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log({ username, email, password });
-    // Handle registration logic here
+    setError("");
+    setSuccessMessage("");
+
+    // Validation des champs
+    if (!username || !email || !password) {
+      setError("Tous les champs sont obligatoires.");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError("L'adresse email est invalide.");
+      return;
+    }
+
+    try {
+      const res = await axios.post("http://localhost:5001/auth/register", {
+        username,
+        email,
+        password,
+      });
+
+      if (res.data.user) {
+        setSuccessMessage(
+          "Inscription réussie. Vous êtes maintenant connecté."
+        );
+        // Attendre 2 secondes avant la redirection pour permettre à l'utilisateur de voir le message de succès
+        setTimeout(async () => {
+          await handleLogin(email, password); // Connexion après inscription
+          navigate("/dashboard");
+        }, 2000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Erreur d'inscription.");
+    }
   };
 
   return (
     <Container component="main" maxWidth="xs">
-      <Paper elevation={3} style={{ padding: "20px", marginTop: "50px" }}>
+      <Paper elevation={3} sx={{ padding: 3, mt: 5 }}>
         <Box
           sx={{
             display: "flex",
@@ -31,10 +75,14 @@ const Register = () => {
             alignItems: "center",
           }}
         >
-          <LockOutlinedIcon color="primary" style={{ fontSize: 40 }} />
+          <LockOutlinedIcon color="primary" sx={{ fontSize: 40 }} />
           <Typography component="h1" variant="h5">
-            Register
+            Inscription
           </Typography>
+
+          {error && <Alert severity="error">{error}</Alert>}
+          {successMessage && <Alert severity="success">{successMessage}</Alert>}
+
           <Box
             component="form"
             onSubmit={handleSubmit}
@@ -46,9 +94,8 @@ const Register = () => {
               required
               fullWidth
               id="username"
-              label="Username"
+              label="Nom d'utilisateur"
               name="username"
-              autoComplete="username"
               autoFocus
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -58,7 +105,7 @@ const Register = () => {
               required
               fullWidth
               id="email"
-              label="Email Address"
+              label="Adresse Email"
               name="email"
               autoComplete="email"
               value={email}
@@ -69,7 +116,7 @@ const Register = () => {
               required
               fullWidth
               name="password"
-              label="Password"
+              label="Mot de passe"
               type="password"
               id="password"
               autoComplete="current-password"
@@ -82,15 +129,15 @@ const Register = () => {
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
             >
-              Register
+              S'inscrire
             </Button>
             <Typography variant="body2" align="center">
-              Already have an account?{" "}
+              Déjà un compte ?{" "}
               <Link
                 to="/login"
                 style={{ textDecoration: "none", color: "#1976d2" }}
               >
-                Sign In
+                Se connecter
               </Link>
             </Typography>
           </Box>
@@ -101,4 +148,3 @@ const Register = () => {
 };
 
 export default Register;
-

@@ -13,13 +13,15 @@ import LogoutIcon from "@mui/icons-material/Logout";
 const Navbar = () => {
   const navigate = useNavigate();
 
-  // Handle logout
+  // Handle logout logic
   const handleLogout = () => {
-    // Perform logout logic (e.g., clear user session, redirect to login)
-    console.log("User logged out");
+    // Clear localStorage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
+    // Redirect to login page
     navigate("/login");
   };
-
   return (
     <AppBar position="static" sx={{ backgroundColor: "#1976d2" }}>
       <Toolbar>

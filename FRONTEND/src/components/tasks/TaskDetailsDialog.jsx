@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -12,44 +12,129 @@ import {
   Divider,
   Chip,
   Tooltip,
+  IconButton,
+  CircularProgress,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import CommentIcon from "@mui/icons-material/Comment";
+import EditIcon from "@mui/icons-material/Edit";
 import { red, green, orange } from "@mui/material/colors";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import PendingIcon from "@mui/icons-material/Pending";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import ScheduleIcon from "@mui/icons-material/Schedule";
+import AuthContext from "../../context/authContext";
+import axios from "axios";
 import {
   priorityColor,
   statusConfig,
   getInitials,
 } from "../../utils/taskUtils";
 
-const TaskDetailsDialog = ({ open, onClose, task }) => {
+const TaskDetailsDialog = ({ open, onClose, task, onStatusChange, onEdit }) => {
+  const { user } = useContext(AuthContext);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("");
 
-  const { title, description, status, priority, deadline, assignedTo } = task;
+  const { id, title, description, status, priority, deadline, assignedTo } =
+    task || {};
+
+  // Initialize selected status when task changes
+  useEffect(() => {
+    if (task) {
+      setSelectedStatus(task.status);
+    }
+  }, [task]);
+
+  // Fetch comments when dialog opens
+  useEffect(() => {
+    if (open && task) {
+      fetchComments();
+    }
+  }, [open, task]);
 
   // Format deadline date
-  const formattedDeadline = new Date(deadline).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedDeadline = deadline
+    ? new Date(deadline).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "No deadline";
 
-  // Handle adding a comment
-  const handleAddComment = () => {
-    if (comment.trim()) {
-      setComments([...comments, { id: comments.length + 1, text: comment }]);
-      setComment("");
+  // Fetch comments from the API
+  const fetchComments = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("accessToken");
+      const response = await axios.get(
+        `http://localhost:5001/tasks/${id}/comments`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setComments(response.data);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Handle adding a comment
+  const handleAddComment = async () => {
+    if (comment.trim()) {
+      try {
+        const token = localStorage.getItem("accessToken");
+        await axios.post(
+          `http://localhost:5001/tasks/${id}/comments`,
+          { content: comment },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setComment("");
+        fetchComments(); // Refresh comments after adding
+      } catch (error) {
+        console.error("Error adding comment:", error);
+      }
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = async (e) => {
+    const newStatus = e.target.value;
+    setSelectedStatus(newStatus);
+
+    if (onStatusChange) {
+      onStatusChange(id, newStatus);
+    }
+  };
+
+  if (!task) return null;
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{title}</DialogTitle>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="h6" component="div">
+          {title}
+        </Typography>
+        {onEdit && (
+          <IconButton onClick={onEdit} size="small">
+            <EditIcon />
+          </IconButton>
+        )}
+      </DialogTitle>
       <DialogContent>
         {/* Task Description */}
         <Typography variant="body1" gutterBottom>
@@ -61,7 +146,7 @@ const TaskDetailsDialog = ({ open, onClose, task }) => {
         {/* Task Details */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <Typography variant="body2" color="text.secondary">
-            <strong>Status:</strong> {statusConfig[status].label}
+            <strong>Status:</strong> {statusConfig[selectedStatus]?.label}
           </Typography>
           <Typography variant="body2" color="text.secondary">
             <strong>Priority:</strong> {priority}
@@ -105,7 +190,11 @@ const TaskDetailsDialog = ({ open, onClose, task }) => {
           Comments
         </Typography>
         <Box sx={{ maxHeight: 200, overflowY: "auto", mb: 2 }}>
-          {comments.length === 0 ? (
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : comments.length === 0 ? (
             <Typography variant="body2" color="text.secondary">
               No comments yet.
             </Typography>
@@ -115,9 +204,9 @@ const TaskDetailsDialog = ({ open, onClose, task }) => {
                 <Avatar sx={{ width: 24, height: 24 }} />
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    User Name
+                    {comment.user.name}
                   </Typography>
-                  <Typography variant="body1">{comment.text}</Typography>
+                  <Typography variant="body1">{comment.content}</Typography>
                 </Box>
               </Box>
             ))
@@ -140,6 +229,38 @@ const TaskDetailsDialog = ({ open, onClose, task }) => {
             Add
           </Button>
         </Box>
+
+        {/* Change Task Status */}
+        {onStatusChange && (
+          <Box sx={{ mt: 2 }}>
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={selectedStatus}
+                onChange={handleStatusChange}
+                label="Status"
+              >
+                {Object.keys(statusConfig).map((statusKey) => (
+                  <MenuItem key={statusKey} value={statusKey}>
+                    <Chip
+                      label={statusConfig[statusKey].label}
+                      color={statusConfig[statusKey].color}
+                      icon={
+                        statusKey === "completed" ? (
+                          <CheckCircleIcon />
+                        ) : statusKey === "pending" ? (
+                          <PendingActionsIcon />
+                        ) : (
+                          <ScheduleIcon />
+                        )
+                      }
+                    />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
