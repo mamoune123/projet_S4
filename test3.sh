@@ -3,13 +3,13 @@
 # Variables
 BASE_URL="http://localhost:5001"
 NORMAL_USERNAME_1="normal_user_1"
-NORMAL_EMAIL_1="mamoune.abbad-el-andaloussi3@etu.univ-lorraine.fr"
+NORMAL_EMAIL_1="minadoussmindaouss@gmail.com"
 NORMAL_PASSWORD_1="password1"
-NORMAL_USERNAME_2="normal_user_2"
-NORMAL_EMAIL_2="mandalouss@hotmail.fr"
+NORMAL_USERNAME_2="SALIM BOUTAMENT"
+NORMAL_EMAIL_2="sboutament@gmail.com"
 NORMAL_PASSWORD_2="password2"
 MANAGER_USERNAME="manager_user"
-MANAGER_EMAIL="manager@example.com"
+MANAGER_EMAIL="mamoune.abbad-el-andaloussi3@etu.univ-lorraine.fr"
 MANAGER_PASSWORD="password"
 PROJECT_ID="" # Will be set after creating a project
 NORMAL_USER_ID_1="" # Will be set after registering the first normal user
