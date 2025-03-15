@@ -62,11 +62,10 @@ exports.login = async (req, res) => {
     if (result.rows.length === 0)
       return res.status(401).json({ message: "Utilisateur non trouvé" });
 
-    const user = result.rows[0];
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch)
-      return res.status(401).json({ message: "Mot de passe incorrect" });
+        const user = result.rows[0];
+        const user_id = user.id;
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return res.status(401).json({ message: "Mot de passe incorrect" });
 
     const { accessToken, refreshToken } = generateTokens(user);
 
@@ -76,10 +75,10 @@ exports.login = async (req, res) => {
       user.id,
     ]);
 
-    res.json({ accessToken, refreshToken});
-  } catch (error) {
-    res.status(500).json({ message: "Erreur serveur", error: error.message });
-  }
+        res.json({ accessToken, refreshToken, user_id });
+    } catch (error) {
+        res.status(500).json({ message: "Erreur serveur", error: error.message });
+    }
 };
 
 exports.register = async (req, res) => {
