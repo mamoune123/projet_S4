@@ -40,8 +40,10 @@ const TaskDetailsDialog = ({ open, onClose, task, onStatusChange, onEdit }) => {
   const [loading, setLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  const { id, title, description, status, priority, deadline, assignedTo } =
+  const { id, title, description, status, priority, deadline, assigned_to } =
     task || {};
+
+  console.log("Task:", task);
 
   // Initialize selected status when task changes
   useEffect(() => {
@@ -79,6 +81,7 @@ const TaskDetailsDialog = ({ open, onClose, task, onStatusChange, onEdit }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
+      console.log("Comments response:", response.data); // Vérifiez la structure des commentaires
       setComments(response.data);
     } catch (error) {
       console.error("Error fetching comments:", error);
@@ -114,6 +117,8 @@ const TaskDetailsDialog = ({ open, onClose, task, onStatusChange, onEdit }) => {
       onStatusChange(id, newStatus);
     }
   };
+
+  console.log("Assigned to:", assigned_to);
 
   if (!task) return null;
 
@@ -159,14 +164,14 @@ const TaskDetailsDialog = ({ open, onClose, task, onStatusChange, onEdit }) => {
         <Divider sx={{ my: 2 }} />
 
         {/* Assigned Users */}
-        {assignedTo && assignedTo.length > 0 && (
+        {assigned_to && assigned_to.length > 0 && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
             <Typography variant="body2" color="text.secondary">
               <strong>Assigned To:</strong>
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
-              {assignedTo.map((user) => (
-                <Tooltip key={user.id} title={user.name}>
+              {assigned_to.map((user) => (
+                <Tooltip key={user.id} title={user.username}>
                   <Avatar
                     sx={{
                       width: 24,
@@ -175,7 +180,7 @@ const TaskDetailsDialog = ({ open, onClose, task, onStatusChange, onEdit }) => {
                       fontSize: "0.75rem", // Adjust font size for initials
                     }}
                   >
-                    {getInitials(user.name)}
+                    {getInitials(user.username)}
                   </Avatar>
                 </Tooltip>
               ))}
@@ -204,7 +209,7 @@ const TaskDetailsDialog = ({ open, onClose, task, onStatusChange, onEdit }) => {
                 <Avatar sx={{ width: 24, height: 24 }} />
                 <Box>
                   <Typography variant="body2" color="text.secondary">
-                    {comment.user.name}
+                    {comment.user.username}
                   </Typography>
                   <Typography variant="body1">{comment.content}</Typography>
                 </Box>

@@ -19,7 +19,7 @@ router.put("/:id", authenticateUser, projectController.updateProject);
 router.delete("/:id", authenticateUser, projectController.deleteProject);
 
 router.get(
-  "/:project_id/tasks",
+  "/my/tasks",
   authenticateUser,
   projectController.getTasksByProject
 );

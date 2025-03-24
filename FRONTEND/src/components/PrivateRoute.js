@@ -1,19 +1,41 @@
-import { useContext } from "react";
-import { Navigate } from "react-router-dom";
+import { useContext, useEffect } from "react";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import AuthContext from "../context/authContext";
+import { CircularProgress, Box } from "@mui/material";
 
-const PrivateRoute = ({ children, roleRequired }) => {
-  const { user, role, loading } = useContext(AuthContext);
-  const hasToken = !!localStorage.getItem("accessToken");
+const PrivateRoute = ({ requiredRole }) => {
+  const { user, loading, isAuthenticated } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  if (loading) return null; // Prevents flickering
+  // Effect to check auth status on route access
+  useEffect(() => {
+    // If not loading and not authenticated, redirect
+    if (!loading && !isAuthenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [loading, isAuthenticated, navigate]);
 
-  // Check both user state and token presence
-  if (!user || !hasToken) return <Navigate to="/login" replace />;
-  if (roleRequired && role !== roleRequired)
+  // Show loading spinner while auth status is being checked
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 5 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Check role requirement if specified
+  if (requiredRole && user.role !== requiredRole) {
     return <Navigate to="/unauthorized" replace />;
+  }
 
-  return children;
+  // User is authenticated and has the required role
+  return <Outlet />;
 };
 
 export default PrivateRoute;

@@ -29,7 +29,6 @@ const Dashboard = () => {
   const [openTaskForm, setOpenTaskForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [editingTask, setEditingTask] = useState(null);
-
   // Check authentication on component mount
   useEffect(() => {
     if (!user && !localStorage.getItem("accessToken")) {
@@ -68,7 +67,7 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem("accessToken");
       const response = await axios.get(
-        `http://localhost:5001/projects/${projectId}/tasks`,
+        `http://localhost:5001/tasks/${projectId}/project`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

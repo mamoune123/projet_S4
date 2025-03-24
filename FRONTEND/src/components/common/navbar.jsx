@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   AppBar,
@@ -9,19 +9,12 @@ import {
   IconButton,
 } from "@mui/material";
 import LogoutIcon from "@mui/icons-material/Logout";
+import AuthContext from "../../context/authContext"; // Importez votre contexte d'authentification
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { user, handleLogout } = useContext(AuthContext); // Récupérez l'utilisateur et la fonction de déconnexion
 
-  // Handle logout logic
-  const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-
-    // Redirect to login page
-    navigate("/login");
-  };
   return (
     <AppBar position="static" sx={{ backgroundColor: "#1976d2" }}>
       <Toolbar>
@@ -66,10 +59,17 @@ const Navbar = () => {
           </Button>
         </Box>
 
-        {/* Logout Button */}
-        <IconButton color="inherit" onClick={handleLogout}>
-          <LogoutIcon />
-        </IconButton>
+        {/* User Name and Logout Button */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          {user && (
+            <Typography variant="body1" sx={{ color: "white" }}>
+              {user.username} {/* Affichez le nom de l'utilisateur */}
+            </Typography>
+          )}
+          <IconButton color="inherit" onClick={handleLogout}>
+            <LogoutIcon />
+          </IconButton>
+        </Box>
       </Toolbar>
     </AppBar>
   );

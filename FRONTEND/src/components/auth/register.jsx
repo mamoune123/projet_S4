@@ -32,14 +32,14 @@ const Register = () => {
     setError("");
     setSuccessMessage("");
 
-    // Validation des champs
+    // Field validation
     if (!username || !email || !password) {
-      setError("Tous les champs sont obligatoires.");
+      setError("All fields are required.");
       return;
     }
 
     if (!validateEmail(email)) {
-      setError("L'adresse email est invalide.");
+      setError("Email address is invalid.");
       return;
     }
 
@@ -52,16 +52,25 @@ const Register = () => {
 
       if (res.data.user) {
         setSuccessMessage(
-          "Inscription réussie. Vous êtes maintenant connecté."
+          "Registration successful. You are now being logged in."
         );
-        // Attendre 2 secondes avant la redirection pour permettre à l'utilisateur de voir le message de succès
+        // Wait 2 seconds before redirecting to allow the user to see the success message
         setTimeout(async () => {
-          await handleLogin(email, password); // Connexion après inscription
-          navigate("/dashboard");
+          try {
+            await handleLogin(email, password); // Login after registration
+            navigate("/dashboard");
+          } catch (loginError) {
+            setError(
+              "Registration successful but failed to log in automatically. Please go to login page."
+            );
+          }
         }, 2000);
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Erreur d'inscription.");
+      setError(
+        err.response?.data?.message ||
+          "Registration failed. The email or username may already be in use."
+      );
     }
   };
 
@@ -77,7 +86,7 @@ const Register = () => {
         >
           <LockOutlinedIcon color="primary" sx={{ fontSize: 40 }} />
           <Typography component="h1" variant="h5">
-            Inscription
+            Register
           </Typography>
 
           {error && <Alert severity="error">{error}</Alert>}
@@ -94,7 +103,7 @@ const Register = () => {
               required
               fullWidth
               id="username"
-              label="Nom d'utilisateur"
+              label="Username"
               name="username"
               autoFocus
               value={username}
@@ -105,7 +114,7 @@ const Register = () => {
               required
               fullWidth
               id="email"
-              label="Adresse Email"
+              label="Email Address"
               name="email"
               autoComplete="email"
               value={email}
@@ -116,10 +125,10 @@ const Register = () => {
               required
               fullWidth
               name="password"
-              label="Mot de passe"
+              label="Password"
               type="password"
               id="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -129,15 +138,15 @@ const Register = () => {
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
             >
-              S'inscrire
+              Register
             </Button>
             <Typography variant="body2" align="center">
-              Déjà un compte ?{" "}
+              Already have an account?{" "}
               <Link
                 to="/login"
                 style={{ textDecoration: "none", color: "#1976d2" }}
               >
-                Se connecter
+                Log in
               </Link>
             </Typography>
           </Box>

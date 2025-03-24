@@ -7,10 +7,10 @@ import {
   Box,
   Paper,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import { Link, useNavigate } from "react-router-dom";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import axios from "axios";
 import AuthContext from "../../context/authContext";
 
 const LoginPage = () => {
@@ -18,17 +18,32 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true);
+
+    // Simple validation
+    if (!email || !password) {
+      setError("Email and password are required");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       await handleLogin(email, password);
       navigate("/dashboard");
     } catch (err) {
-      setError("Identifiants incorrects ou problème serveur.");
+      console.error("Login form error:", err);
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          "Invalid credentials or server problem."
+      );
+      setIsLoading(false);
     }
   };
 
@@ -44,54 +59,61 @@ const LoginPage = () => {
         >
           <LockOutlinedIcon color="primary" sx={{ fontSize: 40 }} />
           <Typography component="h1" variant="h5">
-            Connexion
+            Log In
           </Typography>
-          {error && <Alert severity="error">{error}</Alert>}
+          {error && (
+            <Alert severity="error" sx={{ width: "100%", mt: 2 }}>
+              {error}
+            </Alert>
+          )}
           <Box
             component="form"
             onSubmit={handleSubmit}
             noValidate
-            sx={{ mt: 1 }}
+            sx={{ mt: 1, width: "100%" }}
           >
             <TextField
               margin="normal"
               required
               fullWidth
               id="email"
-              label="Adresse Email"
+              label="Email Address"
               name="email"
               autoComplete="email"
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
             />
             <TextField
               margin="normal"
               required
               fullWidth
               name="password"
-              label="Mot de passe"
+              label="Password"
               type="password"
               id="password"
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              disabled={isLoading}
             />
             <Button
               type="submit"
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              disabled={isLoading}
             >
-              Se connecter
+              {isLoading ? <CircularProgress size={24} /> : "Log In"}
             </Button>
             <Typography variant="body2" align="center">
-              Pas encore de compte ?{" "}
+              Don't have an account yet?{" "}
               <Link
                 to="/register"
                 style={{ textDecoration: "none", color: "#1976d2" }}
               >
-                Inscrivez-vous
+                Register
               </Link>
             </Typography>
           </Box>
